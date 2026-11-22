@@ -26,6 +26,11 @@ export type TOrder = {
   ingredients: string[];
 };
 
+export type TOrderDetails = TOrder & {
+  date: Date;
+  total: number;
+};
+
 export type TOrdersData = {
   orders: TOrder[];
   total: number;
@@ -49,5 +54,5 @@ export type TFeedState = {
   total: number;
   totalToday: number;
   isLoading: boolean;
-  error: unknown;
+  error: string | null;
 };

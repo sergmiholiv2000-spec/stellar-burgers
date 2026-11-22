@@ -1,8 +1,12 @@
+import { clsx } from 'clsx';
 import { memo } from 'react';
 
 import type { FeedInfoUIProps, HalfColumnProps, TColumnProps } from './type';
 
 import styles from './feed-info.module.css';
+
+const READY_ORDERS_COLOR = '#00cccc';
+const DEFAULT_ORDERS_COLOR = '#F2F2F3';
 
 export const FeedInfoUI = memo(function FeedInfoUI({
   feed,
@@ -14,7 +18,11 @@ export const FeedInfoUI = memo(function FeedInfoUI({
   return (
     <section>
       <div className={styles.columns}>
-        <HalfColumn orders={readyOrders} title={'Готовы'} textColor={'blue'} />
+        <HalfColumn
+          orders={readyOrders}
+          title={'Готовы'}
+          textColor={READY_ORDERS_COLOR}
+        />
         <HalfColumn orders={pendingOrders} title={'В работе'} />
       </div>
       <Column title={'Выполнено за все время'} content={total} />
@@ -26,15 +34,15 @@ export const FeedInfoUI = memo(function FeedInfoUI({
 const HalfColumn = ({
   orders,
   title,
-  textColor,
+  textColor = DEFAULT_ORDERS_COLOR,
 }: HalfColumnProps): React.JSX.Element => (
-  <div className={`pr-6 ${styles.column}`}>
-    <h3 className={`text text_type_main-medium ${styles.title}`}>{title}:</h3>
-    <ul className={`pt-6  ${styles.list}`}>
+  <div className={clsx('pr-6', styles.column)}>
+    <h3 className={clsx('text', 'text_type_main-medium', styles.title)}>{title}:</h3>
+    <ul className={clsx('pt-6', styles.list)}>
       {orders.map((item, index) => (
         <li
-          className={`text text_type_digits-default ${styles.list_item}`}
-          style={{ color: textColor === 'blue' ? '#00cccc' : '#F2F2F3' }}
+          className={clsx('text', 'text_type_digits-default', styles.list_item)}
+          style={{ color: textColor }}
           key={index}
         >
           {item}
@@ -46,7 +54,9 @@ const HalfColumn = ({
 
 const Column = ({ title, content }: TColumnProps): React.JSX.Element => (
   <>
-    <h3 className={`pt-15 text text_type_main-medium ${styles.title}`}>{title}:</h3>
-    <p className={`text text_type_digits-large ${styles.content}`}>{content}</p>
+    <h3 className={clsx('pt-15', 'text', 'text_type_main-medium', styles.title)}>
+      {title}:
+    </h3>
+    <p className={clsx('text', 'text_type_digits-large', styles.content)}>{content}</p>
   </>
 );

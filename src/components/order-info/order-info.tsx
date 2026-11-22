@@ -1,21 +1,42 @@
-import { Preloader, OrderInfoUI } from '@ui';
-import { useMemo } from 'react';
+import { OrderInfoUI, Preloader } from '@ui';
+import { useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+
+import {
+  getIngredients,
+  getIngredientsError,
+  getIngredientsLoading,
+} from '../../services/slices/ingredients';
+import {
+  clearOrderByNumber,
+  fetchOrderByNumber,
+  getOrderByNumber,
+  getOrderError,
+  getOrderLoading,
+} from '../../services/slices/order';
+import { useDispatch, useSelector } from '../../services/store';
 
 import type { TIngredient } from '@utils-types';
 
 export const OrderInfo = (): React.JSX.Element => {
-  /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0,
-  };
+  const { number } = useParams<{ number: string }>();
+  const dispatch = useDispatch();
 
-  const ingredients: TIngredient[] = [];
+  const orderData = useSelector(getOrderByNumber);
+  const orderError = useSelector(getOrderError);
+  const isOrderLoading = useSelector(getOrderLoading);
+  const ingredients = useSelector(getIngredients);
+  const isIngredientsLoading = useSelector(getIngredientsLoading);
+  const ingredientsError = useSelector(getIngredientsError);
+
+  useEffect(() => {
+    if (number) {
+      void dispatch(fetchOrderByNumber(Number(number))).catch(() => undefined);
+    }
+    return (): void => {
+      dispatch(clearOrderByNumber());
+    };
+  }, [dispatch, number]);
 
   /* Готовим данные для отображения */
   const orderInfo = useMemo(() => {
@@ -57,8 +78,43 @@ export const OrderInfo = (): React.JSX.Element => {
     };
   }, [orderData, ingredients]);
 
-  if (!orderInfo) {
+  if (
+    isOrderLoading ||
+    isIngredientsLoading ||
+    (!ingredients.length && !ingredientsError) ||
+    (!orderData && !orderError)
+  ) {
     return <Preloader />;
+  }
+
+  if (orderError || !orderData) {
+    return (
+      <p className="text text_type_main-medium" style={{ textAlign: 'center' }}>
+        {orderError ?? 'Заказ не найден'}
+      </p>
+    );
+  }
+
+  /* Без ингредиентов состав заказа не собрать. Явная ошибка лучше вечного
+     прелоадера: он раньше показывался, если запрос ингредиентов падал. */
+  if (!ingredients.length) {
+    return (
+      <p className="text text_type_main-medium" style={{ textAlign: 'center' }}>
+        {ingredientsError
+          ? `Не удалось загрузить ингредиенты: ${
+              ingredientsError.message ?? 'неизвестная ошибка'
+            }`
+          : 'Не удалось собрать состав заказа'}
+      </p>
+    );
+  }
+
+  if (!orderInfo) {
+    return (
+      <p className="text text_type_main-medium" style={{ textAlign: 'center' }}>
+        Не удалось собрать состав заказа
+      </p>
+    );
   }
 
   return <OrderInfoUI orderInfo={orderInfo} />;

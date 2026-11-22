@@ -1,15 +1,27 @@
-import { BurgerIngredients, BurgerConstructor } from '@components';
+import { ConstructorPageUI } from '@ui-pages';
+import { clsx } from 'clsx';
+
+import {
+  getIngredientsError,
+  getIngredientsLoading,
+} from '../../services/slices/ingredients';
+import { useSelector } from '../../services/store';
 
 import styles from './constructor-page.module.css';
 
-export const ConstructorPage = (): React.JSX.Element => (
-  <main className={styles.containerMain}>
-    <h1 className={`${styles.title} text text_type_main-large mt-10 mb-5 pl-5`}>
-      Соберите бургер
-    </h1>
-    <div className={`${styles.main} pl-5 pr-5`}>
-      <BurgerIngredients />
-      <BurgerConstructor />
-    </div>
-  </main>
-);
+export const ConstructorPage = (): React.JSX.Element => {
+  const isLoading = useSelector(getIngredientsLoading);
+  const error = useSelector(getIngredientsError);
+
+  if (error) {
+    return (
+      <main className={styles.containerMain}>
+        <p className={clsx(styles.title, 'text', 'text_type_main-medium', 'mt-10')}>
+          {`Не удалось загрузить ингредиенты: ${error.message ?? 'неизвестная ошибка'}`}
+        </p>
+      </main>
+    );
+  }
+
+  return <ConstructorPageUI isIngredientsLoading={isLoading} />;
+};

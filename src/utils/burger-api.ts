@@ -53,6 +53,15 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
       return refreshData;
     });
 
+/* Ответы, после которых имеет смысл обновить access-токен и повторить запрос.
+   «You should be authorised» и «jwt malformed» приходят, когда access-токена
+   в cookie уже нет (например, браузер закрыли, а refresh-токен остался). */
+const AUTH_ERROR_MESSAGES = new Set([
+  'jwt expired',
+  'jwt malformed',
+  'You should be authorised',
+]);
+
 export const fetchWithRefresh = async <T>(
   url: RequestInfo,
   options: RequestInit
@@ -61,17 +70,22 @@ export const fetchWithRefresh = async <T>(
     const res = await fetch(url, options);
     return await checkResponse<T>(res);
   } catch (err) {
-    if ((err as { message: string }).message === 'jwt expired') {
-      const refreshData = await refreshToken();
-      if (options.headers) {
-        (options.headers as Record<string, string>).authorization =
-          refreshData.accessToken;
-      }
-      const res = await fetch(url, options);
-      return await checkResponse<T>(res);
-    } else {
-      return Promise.reject(toApiError(err));
+    const canRefresh =
+      err instanceof Error &&
+      AUTH_ERROR_MESSAGES.has(err.message) &&
+      Boolean(localStorage.getItem('refreshToken'));
+
+    if (!canRefresh) {
+      throw err instanceof Error ? err : toApiError(err);
     }
+
+    const refreshData = await refreshToken();
+    if (options.headers) {
+      (options.headers as Record<string, string>).authorization =
+        refreshData.accessToken;
+    }
+    const res = await fetch(url, options);
+    return await checkResponse<T>(res);
   }
 };
 
@@ -228,6 +242,9 @@ export const getUserApi = (): Promise<TUserResponse> =>
     headers: {
       authorization: getCookie('accessToken'),
     } as HeadersInit,
+  }).then((data) => {
+    if (data?.success) return data;
+    return Promise.reject(toApiError(data));
   });
 
 export const updateUserApi = (user: Partial<TRegisterData>): Promise<TUserResponse> =>
@@ -238,6 +255,9 @@ export const updateUserApi = (user: Partial<TRegisterData>): Promise<TUserRespon
       authorization: getCookie('accessToken'),
     } as HeadersInit,
     body: JSON.stringify(user),
+  }).then((data) => {
+    if (data?.success) return data;
+    return Promise.reject(toApiError(data));
   });
 
 export const logoutApi = (): Promise<TServerResponse> =>
