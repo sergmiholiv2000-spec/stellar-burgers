@@ -8,6 +8,7 @@ const initialState: TFeedState = {
   total: 0,
   totalToday: 0,
   isLoading: false,
+  isLoaded: false,
   error: null,
 };
 
@@ -31,6 +32,7 @@ export const feedSlice = createSlice({
     getFeedState: (state): TFeedState => state,
     getFeedOrders: (state): TOrder[] => state.orders,
     getFeedLoading: (state): boolean => state.isLoading,
+    getFeedLoaded: (state): boolean => state.isLoaded,
     getFeedError: (state): string | null => state.error,
   },
   extraReducers: (builder): void => {
@@ -41,16 +43,23 @@ export const feedSlice = createSlice({
       })
       .addCase(fetchFeeds.fulfilled, (state, action): void => {
         state.isLoading = false;
+        state.isLoaded = true;
         state.orders = action.payload.orders;
         state.total = action.payload.total;
         state.totalToday = action.payload.totalToday;
       })
       .addCase(fetchFeeds.rejected, (state, action): void => {
         state.isLoading = false;
+        state.isLoaded = true;
         state.error = action.error.message ?? 'Не удалось загрузить ленту заказов';
       });
   },
 });
 
-export const { getFeedState, getFeedOrders, getFeedLoading, getFeedError } =
-  feedSlice.selectors;
+export const {
+  getFeedState,
+  getFeedOrders,
+  getFeedLoading,
+  getFeedLoaded,
+  getFeedError,
+} = feedSlice.selectors;

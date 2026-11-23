@@ -6,7 +6,6 @@ import {
   clearConstructor,
   getConstructorItems,
 } from '../../services/slices/constructor';
-import { fetchFeeds } from '../../services/slices/feed';
 import {
   createOrder,
   getOrderError,
@@ -50,7 +49,6 @@ export const BurgerConstructor = (): React.JSX.Element | null => {
       .unwrap()
       .then((): void => {
         dispatch(clearConstructor());
-        void dispatch(fetchFeeds()).catch(() => undefined);
       })
       .catch((): void => {
         /* Текст ошибки сохраняется в orderSlice и не роняет приложение. */

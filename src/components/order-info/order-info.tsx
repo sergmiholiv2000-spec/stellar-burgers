@@ -2,6 +2,7 @@ import { OrderInfoUI, Preloader } from '@ui';
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { getFeedOrders } from '../../services/slices/feed';
 import {
   getIngredients,
   getIngredientsError,
@@ -14,6 +15,7 @@ import {
   getOrderError,
   getOrderLoading,
 } from '../../services/slices/order';
+import { getProfileOrders } from '../../services/slices/profile-orders';
 import { useDispatch, useSelector } from '../../services/store';
 
 import type { TIngredient } from '@utils-types';
@@ -22,21 +24,47 @@ export const OrderInfo = (): React.JSX.Element => {
   const { number } = useParams<{ number: string }>();
   const dispatch = useDispatch();
 
-  const orderData = useSelector(getOrderByNumber);
+  const orderByNumber = useSelector(getOrderByNumber);
   const orderError = useSelector(getOrderError);
   const isOrderLoading = useSelector(getOrderLoading);
+  const feedOrders = useSelector(getFeedOrders);
+  const profileOrders = useSelector(getProfileOrders);
   const ingredients = useSelector(getIngredients);
   const isIngredientsLoading = useSelector(getIngredientsLoading);
   const ingredientsError = useSelector(getIngredientsError);
 
+  /* В ленте и истории заказов уже есть все данные, поэтому сначала ищем
+     заказ по номеру из URL там — модальное окно открывается без запроса. */
+  const orderFromLists = useMemo(() => {
+    if (!number) return null;
+
+    const orderNumber = Number(number);
+
+    return (
+      [...feedOrders, ...profileOrders].find((order) => order.number === orderNumber) ??
+      null
+    );
+  }, [feedOrders, profileOrders, number]);
+
+  const orderData = orderFromLists ?? orderByNumber;
+
   useEffect(() => {
-    if (number) {
-      void dispatch(fetchOrderByNumber(Number(number))).catch(() => undefined);
+    if (!number) return;
+
+    /* Заказ найден в загруженных списках — запрос к серверу не нужен. */
+    if (orderFromLists) {
+      dispatch(clearOrderByNumber());
+      return;
     }
+
+    /* Запасной вариант: прямой переход по ссылке или перезагрузка страницы. */
+    dispatch(clearOrderByNumber());
+    void dispatch(fetchOrderByNumber(Number(number))).catch(() => undefined);
+
     return (): void => {
       dispatch(clearOrderByNumber());
     };
-  }, [dispatch, number]);
+  }, [dispatch, number, orderFromLists]);
 
   /* Готовим данные для отображения */
   const orderInfo = useMemo(() => {
@@ -78,19 +106,23 @@ export const OrderInfo = (): React.JSX.Element => {
     };
   }, [orderData, ingredients]);
 
+  /* Ошибку заказа из стора показываем только когда он не найден в списках:
+     иначе ошибка прошлого запроса могла бы перекрыть готовые данные. */
+  const resolvedOrderError = orderFromLists ? null : orderError;
+
   if (
-    isOrderLoading ||
+    (isOrderLoading && !orderFromLists) ||
     isIngredientsLoading ||
     (!ingredients.length && !ingredientsError) ||
-    (!orderData && !orderError)
+    (!orderData && !resolvedOrderError)
   ) {
     return <Preloader />;
   }
 
-  if (orderError || !orderData) {
+  if (resolvedOrderError || !orderData) {
     return (
       <p className="text text_type_main-medium" style={{ textAlign: 'center' }}>
-        {orderError ?? 'Заказ не найден'}
+        {resolvedOrderError ?? 'Заказ не найден'}
       </p>
     );
   }

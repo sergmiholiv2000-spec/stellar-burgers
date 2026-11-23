@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import {
   fetchFeeds,
   getFeedError,
+  getFeedLoaded,
   getFeedOrders,
   getFeedLoading,
 } from '../../services/slices/feed';
@@ -14,27 +15,20 @@ import {
 } from '../../services/slices/ingredients';
 import { useDispatch, useSelector } from '../../services/store';
 
-const FEED_REFRESH_INTERVAL = 3000;
-
 export const Feed = (): React.JSX.Element => {
   const dispatch = useDispatch();
 
   const orders = useSelector(getFeedOrders);
   const isLoading = useSelector(getFeedLoading);
+  const isLoaded = useSelector(getFeedLoaded);
   const error = useSelector(getFeedError);
   const isIngredientsLoading = useSelector(getIngredientsLoading);
   const ingredientsError = useSelector(getIngredientsError);
 
+  /* Лента загружается при открытии страницы, дальше пользователь обновляет
+     её вручную кнопкой — периодический опрос не нужен. */
   useEffect(() => {
     void dispatch(fetchFeeds()).catch(() => undefined);
-
-    const refreshTimer = setInterval((): void => {
-      void dispatch(fetchFeeds()).catch(() => undefined);
-    }, FEED_REFRESH_INTERVAL);
-
-    return (): void => {
-      clearInterval(refreshTimer);
-    };
   }, [dispatch]);
 
   const handleGetFeeds = (): void => {
@@ -43,7 +37,7 @@ export const Feed = (): React.JSX.Element => {
 
   /* Карточки заказов собираются из ингредиентов, поэтому без них лента
      осталась бы пустой без объяснения причины. */
-  if (isIngredientsLoading || (isLoading && !orders.length)) {
+  if (isIngredientsLoading || (isLoading && !isLoaded)) {
     return <Preloader />;
   }
 

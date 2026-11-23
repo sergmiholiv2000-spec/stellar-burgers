@@ -11,35 +11,29 @@ import {
   fetchProfileOrders,
   getProfileOrders,
   getProfileOrdersError,
+  getProfileOrdersLoaded,
   getProfileOrdersLoading,
 } from '../../services/slices/profile-orders';
 import { useDispatch, useSelector } from '../../services/store';
-
-const ORDERS_REFRESH_INTERVAL = 3000;
 
 export const ProfileOrders = (): React.JSX.Element => {
   const dispatch = useDispatch();
 
   const orders = useSelector(getProfileOrders);
   const isLoading = useSelector(getProfileOrdersLoading);
+  const isLoaded = useSelector(getProfileOrdersLoaded);
   const error = useSelector(getProfileOrdersError);
   const isIngredientsLoading = useSelector(getIngredientsLoading);
   const ingredientsError = useSelector(getIngredientsError);
 
+  /* История заказов загружается при открытии страницы. Периодический опрос
+     не нужен: он перезаписывал пустое состояние прелоадером. */
   useEffect(() => {
     dispatch(clearProfileOrders());
     void dispatch(fetchProfileOrders()).catch(() => undefined);
-
-    const refreshTimer = setInterval((): void => {
-      void dispatch(fetchProfileOrders()).catch(() => undefined);
-    }, ORDERS_REFRESH_INTERVAL);
-
-    return (): void => {
-      clearInterval(refreshTimer);
-    };
   }, [dispatch]);
 
-  if (isIngredientsLoading || (isLoading && !orders.length)) {
+  if (isIngredientsLoading || (isLoading && !isLoaded)) {
     return <Preloader />;
   }
 
