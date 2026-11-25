@@ -1,18 +1,9 @@
-import type { TIngredient } from '@utils-types';
+import type { TIngredient, TOrderDetails } from '@utils-types';
 
 export type OrderInfoUIProps = {
   orderInfo: TOrderInfo;
 };
 
-type TOrderInfo = {
+type TOrderInfo = TOrderDetails & {
   ingredientsInfo: Record<string, TIngredient & { count: number }>;
-  date: Date;
-  total: number;
-  _id: string;
-  status: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  number: number;
-  ingredients: string[];
 };

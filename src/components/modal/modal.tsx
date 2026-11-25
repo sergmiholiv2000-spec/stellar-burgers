@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 
 import type { TModalProps } from './type';
 
-const modalRoot = document.getElementById('modals');
+const modalRoot = document.getElementById('modals') ?? document.body;
 
 export const Modal = memo(function Modal({
   title,
@@ -26,6 +26,6 @@ export const Modal = memo(function Modal({
     <ModalUI title={title} onClose={onClose}>
       {children}
     </ModalUI>,
-    modalRoot as HTMLDivElement
+    modalRoot
   );
 });

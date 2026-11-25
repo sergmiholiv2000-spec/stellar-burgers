@@ -1,11 +1,7 @@
 export function getCookie(name: string): string | undefined {
-  const matches = new RegExp(
-    '(?:^|; )' +
-      // eslint-disable-next-line no-useless-escape
-      name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') +
-      '=([^;]*)'
-  ).exec(document.cookie);
-  return matches ? decodeURIComponent(matches[1]) : undefined;
+  const cookie = document.cookie.split('; ').find((item) => item.startsWith(`${name}=`));
+
+  return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : undefined;
 }
 
 export function setCookie(
